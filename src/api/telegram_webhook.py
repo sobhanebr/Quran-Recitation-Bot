@@ -229,7 +229,12 @@ async def receive_telegram_webhook(
                 "parse_mode": "Markdown",
                 "reply_markup": reply_markup
             }
-    except Exception:
+    except Exception as e:
         logger.exception("Failed handling message from telegram user %s", user_id)
+        return {
+            "method": "sendMessage",
+            "chat_id": chat_id,
+            "text": f"Error: {repr(e)}",
+        }
 
     return {"status": "ok"}
