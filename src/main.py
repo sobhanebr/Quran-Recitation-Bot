@@ -45,6 +45,12 @@ app.include_router(webhook_router)
 app.include_router(telegram_webhook_router)
 
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="https://t.me/holy_quran_recitation_bot")
+
 @app.get("/health")
 def health():
     return {"status": "ok", "app": settings.app_name}
