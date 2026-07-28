@@ -1,0 +1,34 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases
+*.db
+*.sqlite3
+
+# IDEs and hidden folders
+.vscode/
+.idea/
+.DS_Store
+.agent/
+
+# Logs
+*.log
+
+# Build / Distribution
+dist/
+build/
+*.egg-info/
