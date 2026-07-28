@@ -1,6 +1,6 @@
-# Quran Recitation Sharing WhatsApp Bot
+# Quran Recitation Sharing Bot (WhatsApp & Telegram)
 
-Shared Quran recitation for WhatsApp groups plus personal recitation plans over DM. Groups split the Quran by **page, surah, hizb, juz (default), or whole Quran** over a configurable cycle (**daily, weekly, monthly, or custom `<N>d`**). Languages: **English**, **Persian (فارسی)**, **Arabic (العربية)**.
+Shared Quran recitation for WhatsApp and Telegram groups plus personal recitation plans over DM. Groups split the Quran by **page, surah, hizb, juz (default), or whole Quran** over a configurable cycle (**daily, weekly, monthly, or custom `<N>d`**). Languages: **English**, **Persian (فارسی)**, **Arabic (العربية)**.
 
 ## Features
 
@@ -11,6 +11,7 @@ Shared Quran recitation for WhatsApp groups plus personal recitation plans over 
 - Open-spot announcements on a customizable schedule (`/advertise off|daily|weekly|<N>h|<N>d`, default off)
 - Personal recitation plans over DM (`/plan start 1 juz daily`, `/plan status|done|stop`)
 - Direct quran.com links to the exact portion in claim confirmations, reminders, and plan messages (e.g. `https://quran.com/juz/5`, `/page/302`, `/hizb/12`, surah `/36`)
+- Fully interactive Telegram support with inline buttons and clickable commands for frictionless claiming
 - Optional admin نیت (`/niyyah …`)
 - Claim / release / mark done portions (`/claim`, `/release`, `/done`)
 - Progress (`/status`, `/available`, `/mine`, `/settings`)
@@ -87,10 +88,12 @@ All schedule state lives in the database (`ends_at`, `last_reminder_at`, `last_a
 
 | Var | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | `sqlite:///data/quran_bot.db` | Database |
+| `DATABASE_URL` | `sqlite:///data/quran_bot.db` | Database (Vercel Postgres auto-detected) |
 | `WHATSAPP_TOKEN` | — | Meta API token |
 | `WHATSAPP_PHONE_NUMBER_ID` | — | Sender phone id |
 | `WHATSAPP_VERIFY_TOKEN` | `quran-bot-verify` | Webhook verification |
+| `TELEGRAM_TOKEN` | — | Telegram Bot API token |
+| `TELEGRAM_SECRET_TOKEN` | — | Optional Telegram webhook secret |
 | `BOOTSTRAP_ADMIN_IDS` | — | Comma-separated global super-admin WA ids |
 | `DEFAULT_LANGUAGE` | `en` | New group default |
 | `SCHEDULER_INTERVAL_SECONDS` | `300` | Scheduler tick interval |
@@ -122,6 +125,14 @@ State is stored in SQLite by default (`data/quran_bot.db`).
 3. Subscribe the webhook to `messages`.
 4. For production groups, use a WhatsApp Business number added to the target groups.
 5. Set `BOOTSTRAP_ADMIN_IDS` to your WA user id so the first `/help` in a group promotes you to admin (or leave empty to auto-promote the first user who messages when the group has no admins).
+
+## Telegram Setup
+
+1. Create a bot using [@BotFather](https://t.me/botfather) and get the token.
+2. Set `TELEGRAM_TOKEN` in `.env`.
+3. Set your webhook pointing to `/telegram/webhook` (e.g. `https://api.telegram.org/bot<token>/setWebhook?url=https://<host>/telegram/webhook`).
+4. (Optional) set `TELEGRAM_SECRET_TOKEN` for added webhook security.
+5. Telegram users will enjoy interactive inline grids for claiming and modifying settings seamlessly without typing commands.
 
 ## Tests
 
