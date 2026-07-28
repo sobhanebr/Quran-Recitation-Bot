@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Seconds between scheduler ticks (cycle rollover, reminders, ads, plan check-ins)
     scheduler_interval_seconds: int = 300
 
+    # Vercel Postgres automatically injects this
+    postgres_url: str | None = None
+
     @property
     def bootstrap_admins(self) -> set[str]:
         return {x.strip() for x in self.bootstrap_admin_ids.split(",") if x.strip()}
@@ -42,4 +45,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    if settings.postgres_url:
+        settings.database_url = settings.postgres_url
+    return settings
