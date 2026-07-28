@@ -19,9 +19,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 settings = get_settings()
 
 
+# Initialize database tables on startup (Vercel bypasses ASGI lifespan sometimes)
+init_db()
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    init_db()
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(
         run_tick,
