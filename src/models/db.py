@@ -14,8 +14,14 @@ class Base(DeclarativeBase):
 
 def _make_engine():
     settings = get_settings()
-    connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-    return create_engine(settings.database_url, connect_args=connect_args)
+    
+    # Fix for Vercel Postgres (SQLAlchemy 1.4+ requires postgresql://)
+    url = settings.database_url
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+        
+    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    return create_engine(url, connect_args=connect_args)
 
 
 engine = _make_engine()
