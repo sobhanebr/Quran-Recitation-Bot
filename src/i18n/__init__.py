@@ -32,7 +32,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "• `/admin add|remove <@user|id>` — manage admins\n"
             "• `/admins` — list admins"
         ),
-        "cycle_started": "New cycle *#{cycle}* started — {total} × {unit}. Claim with `/claim <1-{total}>`.",
+        "cycle_started": "New cycle *#{cycle}* started — {total} × {unit}. Claim with /claim.",
         "niyyah_set": "Intention (نیت) set:\n_{niyyah}_",
         "niyyah_cleared": "Intention (نیت) cleared.",
         "niyyah_current": "Current intention (نیت):\n_{niyyah}_",
@@ -50,7 +50,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "status_header": "*Cycle #{cycle}* — {claimed} claimed, {done} done, {free} free",
         "status_niyyah": "نیت: _{niyyah}_",
         "status_claims": "*Claims:*\n{lines}",
-        "status_empty": "No claims yet. Use `/claim <1-{total}>`.",
+        "status_empty": "No claims yet. Use /claim.",
         "mine_header": "*Your claims this cycle:*\n{lines}",
         "mine_empty": "You have nothing claimed this cycle.",
         "lang_set": "Group language set to *English*.",
@@ -93,7 +93,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "reminder_message": "Reminder — pending recitation this cycle:\n{lines}\nMark complete with `/done <n>`.",
         "reminder_line": "• {unit} {num} — {link}",
         "ad_message": "*Open spots* ({count} free):\n{lines}\nClaim with `/claim <n>`.",
-        "cycle_rollover": "Cycle *#{cycle}* has started — {total} × {unit} available. Claim with `/claim <n>`.",
+        "cycle_rollover": "Cycle *#{cycle}* has started — {total} × {unit} available. Claim with /claim.",
         # Personal plans
         "plan_usage": (
             "Personal plan commands:\n"
@@ -135,7 +135,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "• `/admin add|remove <id>` — مدیریت مدیران\n"
             "• `/admins` — فهرست مدیران"
         ),
-        "cycle_started": "دوره *#{cycle}* شروع شد — {total} × {unit}. با `/رزرو <1-{total}>` رزرو کنید.",
+        "cycle_started": "دوره *#{cycle}* شروع شد — {total} × {unit}. با /رزرو رزرو کنید.",
         "niyyah_set": "نیت ثبت شد:\n_{niyyah}_",
         "niyyah_cleared": "نیت پاک شد.",
         "niyyah_current": "نیت فعلی:\n_{niyyah}_",
@@ -153,7 +153,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "status_header": "*دوره #{cycle}* — {claimed} رزرو، {done} تمام، {free} آزاد",
         "status_niyyah": "نیت: _{niyyah}_",
         "status_claims": "*رزروها:*\n{lines}",
-        "status_empty": "هنوز رزروی نیست. `/رزرو <1-{total}>`",
+        "status_empty": "هنوز رزروی نیست. /رزرو",
         "mine_header": "*رزروهای شما در این دوره:*\n{lines}",
         "mine_empty": "در این دوره چیزی رزرو نکرده‌اید.",
         "lang_set": "زبان گروه روی *فارسی* تنظیم شد.",
@@ -196,7 +196,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "reminder_message": "یادآوری — تلاوت باقی‌مانده این دوره:\n{lines}\nبا `/تمام <n>` تکمیل کنید.",
         "reminder_line": "• {unit} {num} — {link}",
         "ad_message": "*جاهای خالی* ({count} آزاد):\n{lines}\nبا `/رزرو <n>` رزرو کنید.",
-        "cycle_rollover": "دوره *#{cycle}* شروع شد — {total} × {unit} آزاد است. با `/رزرو <n>` رزرو کنید.",
+        "cycle_rollover": "دوره *#{cycle}* شروع شد — {total} × {unit} آزاد است. با /رزرو رزرو کنید.",
         # Personal plans
         "plan_usage": (
             "دستورهای برنامه شخصی:\n"
@@ -238,7 +238,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "• `/admin add|remove <id>` — إدارة المشرفين\n"
             "• `/admins` — قائمة المشرفين"
         ),
-        "cycle_started": "بدأت الدورة *#{cycle}* — {total} × {unit}. احجز بـ `/حجز <1-{total}>`.",
+        "cycle_started": "بدأت الدورة *#{cycle}* — {total} × {unit}. احجز بـ /حجز.",
         "niyyah_set": "تم تعيين النية:\n_{niyyah}_",
         "niyyah_cleared": "تم مسح النية.",
         "niyyah_current": "النية الحالية:\n_{niyyah}_",
@@ -256,7 +256,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "status_header": "*الدورة #{cycle}* — {claimed} محجوز، {done} مكتمل، {free} متاح",
         "status_niyyah": "النية: _{niyyah}_",
         "status_claims": "*الحجوزات:*\n{lines}",
-        "status_empty": "لا حجوزات بعد. استخدم `/حجز <1-{total}>`.",
+        "status_empty": "لا حجوزات بعد. استخدم /حجز.",
         "mine_header": "*حجوزاتك هذه الدورة:*\n{lines}",
         "mine_empty": "ليس لديك حجوزات هذه الدورة.",
         "lang_set": "لغة المجموعة: *العربية*.",
@@ -299,7 +299,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "reminder_message": "تذكير — تلاوتك المتبقية هذه الدورة:\n{lines}\nأتمم بـ `/تم <n>`.",
         "reminder_line": "• {unit} {num} — {link}",
         "ad_message": "*أماكن متاحة* ({count} متاح):\n{lines}\nاحجز بـ `/حجز <n>`.",
-        "cycle_rollover": "بدأت الدورة *#{cycle}* — {total} × {unit} متاح. احجز بـ `/حجز <n>`.",
+        "cycle_rollover": "بدأت الدورة *#{cycle}* — {total} × {unit} متاح. احجز بـ /حجز.",
         # Personal plans
         "plan_usage": (
             "أوامر الخطة الشخصية:\n"

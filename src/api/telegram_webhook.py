@@ -221,6 +221,12 @@ async def receive_telegram_webhook(
                     elif lang == "ar": btn_text = "دورة جديدة"
                     inline_kb = [[{"text": btn_text, "callback_data": "/startcycle"}]]
 
+            elif parsed and parsed.action == "startcycle":
+                btn_text = "Claim"
+                if lang == "fa": btn_text = "رزرو"
+                elif lang == "ar": btn_text = "حجز"
+                inline_kb = [[{"text": btn_text, "callback_data": "/claim"}]]
+
             elif parsed and parsed.action == "settings":
                 is_admin = svc.is_admin(group, f"tg:{user_id}")
                 if is_admin:
