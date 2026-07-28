@@ -212,6 +212,15 @@ async def receive_telegram_webhook(
                         else:
                             reply = "You don't have any claimed portions."
 
+            from src.i18n import t
+            if reply in (t("en", "claim_no_cycle"), t("fa", "claim_no_cycle"), t("ar", "claim_no_cycle")):
+                is_admin = svc.is_admin(group, f"tg:{user_id}")
+                if is_admin:
+                    btn_text = "Start Cycle"
+                    if lang == "fa": btn_text = "شروع دوره"
+                    elif lang == "ar": btn_text = "دورة جديدة"
+                    inline_kb = [[{"text": btn_text, "callback_data": "/startcycle"}]]
+
             elif parsed and parsed.action == "settings":
                 is_admin = svc.is_admin(group, f"tg:{user_id}")
                 if is_admin:
