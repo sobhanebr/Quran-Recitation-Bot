@@ -34,6 +34,19 @@ class Settings(BaseSettings):
 
     # Seconds between scheduler ticks (cycle rollover, reminders, ads, plan check-ins)
     scheduler_interval_seconds: int = 300
+    # In-process APScheduler (set false on Vercel; use /cron/tick via cron-job.org instead)
+    enable_inline_scheduler: bool = True
+
+    # Shared secret for GET/POST /cron/tick (header X-Cron-Secret, Bearer, or ?secret=)
+    cron_secret: str = ""
+
+    # Approved WhatsApp template names (empty = free-form text only; fails outside 24h window)
+    whatsapp_template_reminder: str = ""
+    whatsapp_template_ad: str = ""
+    whatsapp_template_cycle: str = ""
+    whatsapp_template_plan: str = ""
+    # Default Meta template language code when group lang has no mapping
+    whatsapp_template_lang_default: str = "en"
 
     # Vercel Postgres automatically injects this
     postgres_url: str | None = None
@@ -41,6 +54,24 @@ class Settings(BaseSettings):
     @property
     def bootstrap_admins(self) -> set[str]:
         return {x.strip() for x in self.bootstrap_admin_ids.split(",") if x.strip()}
+
+    def whatsapp_template_name(self, kind: str) -> str:
+        return {
+            "reminder": self.whatsapp_template_reminder,
+            "ad": self.whatsapp_template_ad,
+            "cycle_rollover": self.whatsapp_template_cycle,
+            "plan_checkin": self.whatsapp_template_plan,
+        }.get(kind, "")
+
+    def whatsapp_template_lang(self, lang: str | None) -> str:
+        """Map bot language codes to Meta template language codes."""
+        mapping = {
+            "en": "en",
+            "fa": "fa",
+            "ar": "ar",
+        }
+        code = (lang or "").strip().lower()
+        return mapping.get(code, self.whatsapp_template_lang_default)
 
 
 @lru_cache

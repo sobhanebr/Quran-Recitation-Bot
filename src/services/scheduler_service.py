@@ -1,12 +1,14 @@
 """Periodic tick: cycle rollover, reminders, open-spot ads, and plan check-ins.
 
 State lives on the rows themselves (``ends_at`` / ``last_*_at``), so the tick
-is restart-safe and needs no persistent job store.
+is restart-safe and needs no persistent job store. On Vercel, invoke via
+``GET/POST /cron/tick`` (cron-job.org) instead of the in-process APScheduler.
 """
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -21,6 +23,25 @@ from src.services.plan_service import portion_range
 logger = logging.getLogger(__name__)
 
 MAX_LISTED_PORTIONS = 40
+
+
+@dataclass
+class OutboundMessage:
+    """A scheduled message ready to send."""
+
+    to: str
+    body: str
+    kind: str  # reminder | ad | cycle_rollover | plan_checkin
+    lang: str = "en"
+    template_params: list[str] = field(default_factory=list)
+
+    # Allow tuple-like unpacking / indexing for older tests: msg[0], msg[1]
+    def __iter__(self):
+        yield self.to
+        yield self.body
+
+    def __getitem__(self, index: int):
+        return (self.to, self.body)[index]
 
 
 def _utcnow() -> datetime:
@@ -52,11 +73,11 @@ def _compact_numbers(numbers: list[int]) -> str:
     return text
 
 
-def collect_due_messages(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
-    """Advance due state and return (recipient_wa_id, body) pairs to send."""
+def collect_due_messages(db: Session, now: datetime | None = None) -> list[OutboundMessage]:
+    """Advance due state and return outbound messages to send."""
     now = now or _utcnow()
     svc = QuranGroupService(db)
-    outbox: list[tuple[str, str]] = []
+    outbox: list[OutboundMessage] = []
 
     for group in db.scalars(select(Group)).all():
         lang = group.language
@@ -66,15 +87,26 @@ def collect_due_messages(db: Session, now: datetime | None = None) -> list[tuple
         if cycle and _aware(cycle.ends_at) and _aware(cycle.ends_at) <= now:
             result = svc.start_cycle(group)
             cycle = result.data["cycle"]
+            total = svc.cycle_total(cycle)
+            unit = unit_label(lang, cycle.granularity)
             body = t(
                 lang,
                 "cycle_rollover",
                 cycle=cycle.cycle_number,
-                total=svc.cycle_total(cycle),
-                unit=unit_label(lang, cycle.granularity),
+                total=total,
+                unit=unit,
             )
+            params = [str(cycle.cycle_number), f"{total} × {unit}"]
             for m in group.members:
-                outbox.append((m.wa_user_id, body))
+                outbox.append(
+                    OutboundMessage(
+                        to=m.wa_user_id,
+                        body=body,
+                        kind="cycle_rollover",
+                        lang=lang,
+                        template_params=params,
+                    )
+                )
 
         if not cycle:
             continue
@@ -103,7 +135,16 @@ def collect_due_messages(db: Session, now: datetime | None = None) -> list[tuple
                     )
                     for c in claims
                 )
-                outbox.append((member.wa_user_id, t(lang, "reminder_message", lines=lines)))
+                summary = ", ".join(f"{unit} {c.portion_number}" for c in claims)
+                outbox.append(
+                    OutboundMessage(
+                        to=member.wa_user_id,
+                        body=t(lang, "reminder_message", lines=lines),
+                        kind="reminder",
+                        lang=lang,
+                        template_params=[summary],
+                    )
+                )
             group.last_reminder_at = now
             db.commit()
 
@@ -112,14 +153,24 @@ def collect_due_messages(db: Session, now: datetime | None = None) -> list[tuple
             avail = svc.available_portions(group)
             free = avail.data.get("free", []) if avail.ok else []
             if free:
+                compact = _compact_numbers(free)
                 body = t(
                     lang,
                     "ad_message",
                     count=len(free),
-                    lines=_compact_numbers(free),
+                    lines=compact,
                 )
+                params = [str(len(free)), compact]
                 for m in group.members:
-                    outbox.append((m.wa_user_id, body))
+                    outbox.append(
+                        OutboundMessage(
+                            to=m.wa_user_id,
+                            body=body,
+                            kind="ad",
+                            lang=lang,
+                            template_params=params,
+                        )
+                    )
             group.last_ad_at = now
             db.commit()
 
@@ -130,22 +181,32 @@ def collect_due_messages(db: Session, now: datetime | None = None) -> list[tuple
             continue
         start, end = portion_range(plan)
         range_str = str(start) if start == end else f"{start}-{end}"
+        unit = unit_label(plan.language, plan.granularity)
+        link = portion_url(plan.granularity, start)
         body = t(
             plan.language,
             "plan_checkin",
-            unit=unit_label(plan.language, plan.granularity),
+            unit=unit,
             range=range_str,
-            link=portion_url(plan.granularity, start),
+            link=link,
         )
-        outbox.append((plan.wa_user_id, body))
+        outbox.append(
+            OutboundMessage(
+                to=plan.wa_user_id,
+                body=body,
+                kind="plan_checkin",
+                lang=plan.language,
+                template_params=[f"{unit} {range_str}", link],
+            )
+        )
         plan.last_reminder_at = now
         db.commit()
 
     return outbox
 
 
-async def run_tick() -> None:
-    """Entry point for the APScheduler job."""
+async def run_tick() -> dict:
+    """Entry point for APScheduler and /cron/tick. Returns a small status dict."""
     from src.api.telegram_client import TelegramClient
     from src.api.whatsapp_client import WhatsAppClient
     from src.models.db import SessionLocal
@@ -157,15 +218,25 @@ async def run_tick() -> None:
         outbox = collect_due_messages(db)
     except Exception:
         logger.exception("Scheduler tick failed")
-        return
+        return {"ok": False, "sent": 0, "error": "collect_failed"}
     finally:
         db.close()
 
-    for to, body in outbox:
+    sent = 0
+    for msg in outbox:
         try:
-            if to.startswith("tg:"):
-                await tg_client.send_text(to[3:], body)
+            if msg.to.startswith("tg:"):
+                await tg_client.send_text(msg.to[3:], msg.body)
             else:
-                await wa_client.send_text(to, body)
+                await wa_client.send_proactive(
+                    msg.to,
+                    msg.body,
+                    kind=msg.kind,
+                    lang=msg.lang,
+                    template_params=msg.template_params,
+                )
+            sent += 1
         except Exception:
-            logger.exception("Failed to send scheduled message to %s", to)
+            logger.exception("Failed to send scheduled message to %s", msg.to)
+
+    return {"ok": True, "sent": sent, "queued": len(outbox)}

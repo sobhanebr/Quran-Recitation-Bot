@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
+from src.api.cron import router as cron_router
 from src.api.telegram_webhook import router as telegram_webhook_router
 from src.api.webhook import router as webhook_router
 from src.config import get_settings
@@ -22,27 +23,32 @@ settings = get_settings()
 # Initialize database tables on startup (Vercel bypasses ASGI lifespan sometimes)
 init_db()
 
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    scheduler = AsyncIOScheduler(timezone="UTC")
-    scheduler.add_job(
-        run_tick,
-        "interval",
-        seconds=settings.scheduler_interval_seconds,
-        id="quran-bot-tick",
-        max_instances=1,
-        coalesce=True,
-    )
-    scheduler.start()
+    scheduler = None
+    if settings.enable_inline_scheduler:
+        scheduler = AsyncIOScheduler(timezone="UTC")
+        scheduler.add_job(
+            run_tick,
+            "interval",
+            seconds=settings.scheduler_interval_seconds,
+            id="quran-bot-tick",
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.start()
     try:
         yield
     finally:
-        scheduler.shutdown(wait=False)
+        if scheduler is not None:
+            scheduler.shutdown(wait=False)
 
 
 app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 app.include_router(webhook_router)
 app.include_router(telegram_webhook_router)
+app.include_router(cron_router)
 
 
 from fastapi.responses import RedirectResponse

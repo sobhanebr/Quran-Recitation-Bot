@@ -73,16 +73,49 @@ The scheduler DMs the day's portion as a check-in on the plan's cycle. Completin
 
 ## Scheduler
 
-A background APScheduler job ticks every `SCHEDULER_INTERVAL_SECONDS` (default 300) and:
+Each tick:
 
 1. Auto-rolls expired group cycles and announces the new cycle to members
 2. DMs completion reminders to members with unfinished claims (per `/reminders`)
 3. Broadcasts open portions to all members (per `/advertise`)
 4. Sends personal plan check-ins
 
-All schedule state lives in the database (`ends_at`, `last_reminder_at`, `last_ad_at`), so restarts are safe.
+Due-ness is stored in the DB (`ends_at`, `last_reminder_at`, `last_ad_at`), so ticks are restart-safe.
 
-**Meta 24-hour window:** the WhatsApp Cloud API only delivers free-form messages to users who messaged the bot within the last 24 hours. Scheduled reminders/ads to users outside that window will be dropped by Meta unless you use approved template messages (not implemented here).
+### Local / VPS
+
+In-process APScheduler runs when `ENABLE_INLINE_SCHEDULER=true` (default).
+
+### Vercel + cron-job.org
+
+Serverless hosts do not keep APScheduler alive. Use an external cron:
+
+1. Set in Vercel env:
+   - `CRON_SECRET` — long random string
+   - `ENABLE_INLINE_SCHEDULER=false`
+2. On [cron-job.org](https://cron-job.org): create a job every 5 minutes  
+   - URL: `https://YOUR-DOMAIN/cron/tick`  
+   - Method: GET or POST  
+   - Header: `X-Cron-Secret: <same as CRON_SECRET>`  
+   - Or append `?secret=<CRON_SECRET>` to the URL
+3. A successful run returns JSON like `{"ok": true, "sent": 3, "queued": 3}`.
+
+### WhatsApp template messages (required outside 24h)
+
+Free-form WhatsApp texts only work within **24 hours** of the user’s last message. Scheduled pushes use **approved templates** when configured.
+
+Create Utility templates in Meta Business Suite → WhatsApp → Message templates (one per language you need: `en`, `fa`, `ar`), then set:
+
+| Env | Kind | Suggested body (placeholders) |
+|---|---|---|
+| `WHATSAPP_TEMPLATE_REMINDER` | reminder | `Reminder — pending: {{1}}. Reply /done when finished.` |
+| `WHATSAPP_TEMPLATE_AD` | ad | `Open spots ({{1}} free): {{2}}. Claim with /claim.` |
+| `WHATSAPP_TEMPLATE_CYCLE` | cycle_rollover | `New cycle #{{1}} started — {{2}} available. Claim with /claim.` |
+| `WHATSAPP_TEMPLATE_PLAN` | plan_checkin | `Your portion: {{1}}. {{2}} — reply /plan done when complete.` |
+
+`{{1}}` / `{{2}}` must match exactly what the bot sends (see table). After Meta approves the templates, put their **names** in env (not the body text).
+
+Send order: template if configured → else free-form text; if free-form hits error `131047` and no template is set, the send is skipped and logged.
 
 ## Config (`.env`)
 
@@ -96,7 +129,14 @@ All schedule state lives in the database (`ends_at`, `last_reminder_at`, `last_a
 | `TELEGRAM_SECRET_TOKEN` | — | Optional Telegram webhook secret |
 | `BOOTSTRAP_ADMIN_IDS` | — | Comma-separated global super-admin WA ids |
 | `DEFAULT_LANGUAGE` | `en` | New group default |
-| `SCHEDULER_INTERVAL_SECONDS` | `300` | Scheduler tick interval |
+| `SCHEDULER_INTERVAL_SECONDS` | `300` | In-process scheduler tick interval |
+| `ENABLE_INLINE_SCHEDULER` | `true` | Set `false` on Vercel |
+| `CRON_SECRET` | — | Protects `/cron/tick` for cron-job.org |
+| `WHATSAPP_TEMPLATE_REMINDER` | — | Approved template name for reminders |
+| `WHATSAPP_TEMPLATE_AD` | — | Approved template name for open-spot ads |
+| `WHATSAPP_TEMPLATE_CYCLE` | — | Approved template name for cycle rollover |
+| `WHATSAPP_TEMPLATE_PLAN` | — | Approved template name for plan check-ins |
+| `WHATSAPP_TEMPLATE_LANG_DEFAULT` | `en` | Fallback Meta template language code |
 
 ## Architecture
 
