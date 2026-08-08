@@ -94,11 +94,12 @@ Serverless hosts do not keep APScheduler alive. Use an external cron:
    - `CRON_SECRET` — long random string
    - `ENABLE_INLINE_SCHEDULER=false`
 2. On [cron-job.org](https://cron-job.org): create a job every 5 minutes  
-   - URL: `https://YOUR-DOMAIN/cron/tick`  
+   - URL: `https://YOUR-DOMAIN/api/tick` (also works: `/cron/tick`)  
    - Method: GET or POST  
    - Header: `X-Cron-Secret: <same as CRON_SECRET>`  
    - Or append `?secret=<CRON_SECRET>` to the URL
 3. A successful run returns JSON like `{"ok": true, "sent": 3, "queued": 3}`.
+4. If you still get FastAPI `{"detail":"Not Found"}`, the deployment is stale: in Vercel → Deployments → … on the latest → **Redeploy** and **uncheck “Use existing Build Cache”**.
 
 ### WhatsApp template messages (required outside 24h)
 

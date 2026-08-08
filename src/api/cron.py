@@ -34,6 +34,7 @@ def _authorized(
 
 
 @router.api_route("/cron/tick", methods=["GET", "POST"])
+@router.api_route("/api/tick", methods=["GET", "POST"])
 async def cron_tick(
     request: Request,
     secret: str | None = Query(None, description="Cron secret (alternative to headers)"),
@@ -42,9 +43,12 @@ async def cron_tick(
 ):
     """Run one scheduler tick. Protect with CRON_SECRET.
 
+    Prefer ``/api/tick`` on Vercel. Also available at ``/cron/tick``.
+
     cron-job.org examples:
+    - URL: ``https://your.host/api/tick``
     - Header: ``X-Cron-Secret: <CRON_SECRET>``
-    - Or URL: ``https://your.host/cron/tick?secret=<CRON_SECRET>``
+    - Or ``?secret=<CRON_SECRET>``
     """
     settings = get_settings()
     if not settings.cron_secret:
